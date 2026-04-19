@@ -75,6 +75,7 @@ let deferredInstallPrompt = null;
 const mobileMediaQuery = window.matchMedia("(max-width: 720px)");
 
 const refs = {
+  pageNav: document.getElementById("pageNav"),
   overviewPage: document.getElementById("overviewPage"),
   recordsPage: document.getElementById("recordsPage"),
   progressPage: document.getElementById("progressPage"),
@@ -148,6 +149,7 @@ function initialize() {
   populateMuscleGroupOptions();
   bindEvents();
   initializePWA();
+  initializePageFromLocation();
   syncFormDate();
   render();
 }
@@ -181,10 +183,7 @@ function bindEvents() {
   });
   refs.calendarViewBtn.addEventListener("click", () => setCurrentView("calendar"));
   refs.weekViewBtn.addEventListener("click", () => setCurrentView("week"));
-  refs.overviewPageBtn.addEventListener("click", () => setCurrentPage("overview"));
-  refs.recordsPageBtn.addEventListener("click", () => setCurrentPage("records"));
-  refs.progressPageBtn.addEventListener("click", () => setCurrentPage("progress"));
-  refs.plansPageBtn.addEventListener("click", () => setCurrentPage("plans"));
+  refs.pageNav.addEventListener("click", handlePageNavClick);
   refs.progressExerciseSelect.addEventListener("change", handleProgressExerciseChange);
   refs.muscleGroupFilter.addEventListener("change", (event) => {
     state.filterMuscleGroup = event.target.value;
@@ -205,6 +204,7 @@ function bindEvents() {
   refs.openComposerBtn.addEventListener("click", openComposer);
   refs.sheetBackdrop.addEventListener("click", closeComposer);
   window.addEventListener("keydown", handleKeydown);
+  window.addEventListener("hashchange", handleHashChange);
   if (typeof mobileMediaQuery.addEventListener === "function") {
     mobileMediaQuery.addEventListener("change", handleViewportChange);
   } else if (typeof mobileMediaQuery.addListener === "function") {
@@ -703,12 +703,52 @@ function setCurrentView(view) {
   renderCurrentView();
 }
 
-function setCurrentPage(page) {
+function setCurrentPage(page, options = {}) {
+  const { updateHash = true } = options;
   state.currentPage = page;
   if (page !== "records") {
     closeComposer();
   }
+  if (updateHash) {
+    const targetHash = page === "overview" ? "" : `#${page}`;
+    const currentHash = window.location.hash;
+    if (currentHash !== targetHash) {
+      const targetURL = `${window.location.pathname}${window.location.search}${targetHash}`;
+      window.history.replaceState(null, "", targetURL);
+    }
+  }
   renderCurrentPage();
+}
+
+function handlePageNavClick(event) {
+  const button = event.target.closest("[data-page]");
+  if (!button) {
+    return;
+  }
+  setCurrentPage(button.dataset.page);
+}
+
+function initializePageFromLocation() {
+  const page = resolvePageFromHash(window.location.hash);
+  if (page) {
+    state.currentPage = page;
+  }
+}
+
+function handleHashChange() {
+  const page = resolvePageFromHash(window.location.hash);
+  if (!page || page === state.currentPage) {
+    return;
+  }
+  setCurrentPage(page, { updateHash: false });
+}
+
+function resolvePageFromHash(hash) {
+  const value = String(hash || "").replace(/^#/, "").trim();
+  if (["overview", "records", "progress", "plans"].includes(value)) {
+    return value;
+  }
+  return value === "" ? "overview" : null;
 }
 
 function handleExerciseInputChange() {
@@ -1228,7 +1268,7 @@ function initializePWA() {
   updateInstallAvailability();
 
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    navigator.serviceWorker.register("service-worker.js?v=20260419-2").catch((error) => {
+    navigator.serviceWorker.register("service-worker.js?v=20260419-3").catch((error) => {
       console.error("service worker 注册失败", error);
     });
   }
