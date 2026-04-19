@@ -439,7 +439,7 @@ function renderProgressPanel() {
   const latest = datasets
     .flatMap((dataset) => dataset.points.map((point) => ({ ...point, exerciseName: dataset.exerciseName })))
     .sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date))
-    .at(-1);
+    .slice(-1)[0];
 
   refs.progressStats.appendChild(createProgressStat("展示动作", `${datasets.length} 个`));
   refs.progressStats.appendChild(createProgressStat("最佳重量", `${formatNumber(bestWeight)} kg`));
@@ -542,18 +542,24 @@ function populateMuscleGroupOptions() {
 
 function syncFilterControls() {
   refs.muscleGroupFilter.value = state.filterMuscleGroup;
-  ensureProgressExerciseSelection();
   refs.progressExerciseChoices.innerHTML = "";
 
   getAvailableExercisesForFilter().forEach((exercise) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    chip.className = "chip";
+    const chip = document.createElement("label");
+    chip.className = "choice-chip";
     if (state.selectedProgressExercises.includes(exercise)) {
       chip.classList.add("is-selected");
     }
-    chip.textContent = exercise;
-    chip.addEventListener("click", () => toggleProgressExercise(exercise));
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = state.selectedProgressExercises.includes(exercise);
+    checkbox.addEventListener("change", () => toggleProgressExercise(exercise));
+
+    const text = document.createElement("span");
+    text.textContent = exercise;
+
+    chip.appendChild(checkbox);
+    chip.appendChild(text);
     refs.progressExerciseChoices.appendChild(chip);
   });
 }
@@ -910,11 +916,7 @@ function ensureProgressExerciseSelection(forceFallback = false) {
   const available = getAvailableExercisesForFilter();
   state.selectedProgressExercises = state.selectedProgressExercises.filter((exercise) => available.includes(exercise));
 
-  if (state.selectedProgressExercises.length > 0 && !forceFallback) {
-    return;
-  }
-
-  if (state.selectedProgressExercises.length === 0 && available.length > 0) {
+  if (forceFallback && state.selectedProgressExercises.length === 0 && available.length > 0) {
     state.selectedProgressExercises = [available[0]];
   }
 }
