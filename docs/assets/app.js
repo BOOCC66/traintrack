@@ -121,7 +121,7 @@ const refs = {
   calendarViewBtn: document.getElementById("calendarViewBtn"),
   weekViewBtn: document.getElementById("weekViewBtn"),
   muscleGroupFilter: document.getElementById("muscleGroupFilter"),
-  progressExerciseChoices: document.getElementById("progressExerciseChoices"),
+  progressExerciseSelect: document.getElementById("progressExerciseSelect"),
   clearProgressSelectionBtn: document.getElementById("clearProgressSelectionBtn"),
   exportBtn: document.getElementById("exportBtn"),
   importBtn: document.getElementById("importBtn"),
@@ -185,6 +185,7 @@ function bindEvents() {
   refs.recordsPageBtn.addEventListener("click", () => setCurrentPage("records"));
   refs.progressPageBtn.addEventListener("click", () => setCurrentPage("progress"));
   refs.plansPageBtn.addEventListener("click", () => setCurrentPage("plans"));
+  refs.progressExerciseSelect.addEventListener("change", handleProgressExerciseChange);
   refs.muscleGroupFilter.addEventListener("change", (event) => {
     state.filterMuscleGroup = event.target.value;
     ensureProgressExerciseSelection(true);
@@ -444,8 +445,8 @@ function renderProgressPanel() {
 
   if (exerciseNames.length === 0) {
     refs.progressStats.appendChild(createProgressStat("记录状态", "暂无数据"));
-    refs.progressStats.appendChild(createProgressStat("建议", "先选择一个动作"));
-    renderEmptyChart("请选择至少一个动作来展示 PR 曲线。");
+    refs.progressStats.appendChild(createProgressStat("建议", "先从下拉框选择动作"));
+    renderEmptyChart("请选择一个动作来展示 PR 曲线。");
     return;
   }
 
@@ -470,7 +471,7 @@ function renderProgressPanel() {
     .sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date))
     .slice(-1)[0];
 
-  refs.progressStats.appendChild(createProgressStat("展示动作", `${datasets.length} 个`));
+  refs.progressStats.appendChild(createProgressStat("图表动作", datasets[0].exerciseName));
   refs.progressStats.appendChild(createProgressStat("最佳重量", `${formatNumber(bestWeight)} kg`));
   refs.progressStats.appendChild(createProgressStat("最佳估算 1RM", `${formatNumber(bestPr)} kg`));
   refs.progressStats.appendChild(createProgressStat("最近一次", `${latest.exerciseName} · ${formatNumber(latest.weight)} kg`));
@@ -571,26 +572,20 @@ function populateMuscleGroupOptions() {
 
 function syncFilterControls() {
   refs.muscleGroupFilter.value = state.filterMuscleGroup;
-  refs.progressExerciseChoices.innerHTML = "";
+  refs.progressExerciseSelect.innerHTML = "";
+  refs.progressExerciseSelect.appendChild(createOptionElement("请选择图表动作", ""));
 
   getAvailableExercisesForFilter().forEach((exercise) => {
-    const chip = document.createElement("label");
-    chip.className = "choice-chip";
-    if (state.selectedProgressExercises.includes(exercise)) {
-      chip.classList.add("is-selected");
-    }
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = state.selectedProgressExercises.includes(exercise);
-    checkbox.addEventListener("change", () => toggleProgressExercise(exercise));
-
-    const text = document.createElement("span");
-    text.textContent = exercise;
-
-    chip.appendChild(checkbox);
-    chip.appendChild(text);
-    refs.progressExerciseChoices.appendChild(chip);
+    refs.progressExerciseSelect.appendChild(createOptionElement(exercise, exercise));
   });
+
+  refs.progressExerciseSelect.value = state.selectedProgressExercises[0] || "";
+}
+
+function handleProgressExerciseChange(event) {
+  const value = event.target.value;
+  state.selectedProgressExercises = value ? [value] : [];
+  renderProgressPanel();
 }
 
 function handleSubmit(event) {
@@ -968,6 +963,10 @@ function ensureProgressExerciseSelection(forceFallback = false) {
   if (forceFallback && state.selectedProgressExercises.length === 0 && available.length > 0) {
     state.selectedProgressExercises = [available[0]];
   }
+
+  if (state.selectedProgressExercises.length > 1) {
+    state.selectedProgressExercises = [state.selectedProgressExercises[0]];
+  }
 }
 
 function resolveSelectedProgressExercises() {
@@ -1084,17 +1083,6 @@ function renderChart(datasets) {
       </g>
     </g>
   `;
-}
-
-function toggleProgressExercise(exercise) {
-  if (state.selectedProgressExercises.includes(exercise)) {
-    state.selectedProgressExercises = state.selectedProgressExercises.filter((item) => item !== exercise);
-  } else {
-    state.selectedProgressExercises = [...state.selectedProgressExercises, exercise];
-  }
-  ensureProgressExerciseSelection();
-  syncFilterControls();
-  renderProgressPanel();
 }
 
 function renderEmptyChart(message) {
