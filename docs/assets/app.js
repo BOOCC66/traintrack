@@ -1240,7 +1240,7 @@ function initializePWA() {
   updateInstallAvailability();
 
   if ("serviceWorker" in navigator && window.location.protocol !== "file:") {
-    navigator.serviceWorker.register("service-worker.js").catch((error) => {
+    navigator.serviceWorker.register("service-worker.js?v=20260419-2").catch((error) => {
       console.error("service worker 注册失败", error);
     });
   }

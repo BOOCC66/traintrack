@@ -1,11 +1,11 @@
-const CACHE_NAME = "traintrack-static-v3";
+const CACHE_NAME = "traintrack-static-v4";
 const APP_SHELL = "./index.html";
 const ASSETS = [
   "./",
   "./index.html",
-  "./assets/styles.css",
-  "./assets/app.js",
-  "./manifest.webmanifest",
+  "./assets/styles.css?v=20260419-2",
+  "./assets/app.js?v=20260419-2",
+  "./manifest.webmanifest?v=20260419-2",
   "./assets/icon.svg"
 ];
 
@@ -34,6 +34,12 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  const requestURL = new URL(event.request.url);
+  const isLocalAsset = requestURL.origin === self.location.origin &&
+    (requestURL.pathname.endsWith("/assets/styles.css") ||
+      requestURL.pathname.endsWith("/assets/app.js") ||
+      requestURL.pathname.endsWith("/manifest.webmanifest"));
+
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
@@ -43,6 +49,23 @@ self.addEventListener("fetch", (event) => {
           return response;
         })
         .catch(() => caches.match(event.request).then((cached) => cached || caches.match(APP_SHELL)))
+    );
+    return;
+  }
+
+  if (isLocalAsset) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200) {
+            return response;
+          }
+
+          const cloned = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, cloned));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
     );
     return;
   }
