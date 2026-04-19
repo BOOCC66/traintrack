@@ -60,6 +60,7 @@ const DEFAULT_WEEK_PLANS = [
 ];
 
 const state = {
+  currentPage: "overview",
   currentView: "calendar",
   viewDate: startOfMonth(new Date()),
   weekAnchor: startOfWeek(new Date()),
@@ -74,6 +75,14 @@ let deferredInstallPrompt = null;
 const mobileMediaQuery = window.matchMedia("(max-width: 720px)");
 
 const refs = {
+  overviewPage: document.getElementById("overviewPage"),
+  recordsPage: document.getElementById("recordsPage"),
+  progressPage: document.getElementById("progressPage"),
+  plansPage: document.getElementById("plansPage"),
+  overviewPageBtn: document.getElementById("overviewPageBtn"),
+  recordsPageBtn: document.getElementById("recordsPageBtn"),
+  progressPageBtn: document.getElementById("progressPageBtn"),
+  plansPageBtn: document.getElementById("plansPageBtn"),
   calendarView: document.getElementById("calendarView"),
   weekView: document.getElementById("weekView"),
   calendarGrid: document.getElementById("calendarGrid"),
@@ -172,6 +181,10 @@ function bindEvents() {
   });
   refs.calendarViewBtn.addEventListener("click", () => setCurrentView("calendar"));
   refs.weekViewBtn.addEventListener("click", () => setCurrentView("week"));
+  refs.overviewPageBtn.addEventListener("click", () => setCurrentPage("overview"));
+  refs.recordsPageBtn.addEventListener("click", () => setCurrentPage("records"));
+  refs.progressPageBtn.addEventListener("click", () => setCurrentPage("progress"));
+  refs.plansPageBtn.addEventListener("click", () => setCurrentPage("plans"));
   refs.muscleGroupFilter.addEventListener("change", (event) => {
     state.filterMuscleGroup = event.target.value;
     ensureProgressExerciseSelection(true);
@@ -201,12 +214,28 @@ function bindEvents() {
 function render() {
   syncFilterControls();
   renderHeaderStats();
+  renderCurrentPage();
   renderCurrentView();
   renderSelectedDay();
   renderTopExercises();
   renderProgressPanel();
   renderWeekPlans();
   renderPlanSuggestionChips();
+}
+
+function renderCurrentPage() {
+  const pages = [
+    { key: "overview", button: refs.overviewPageBtn, section: refs.overviewPage },
+    { key: "records", button: refs.recordsPageBtn, section: refs.recordsPage },
+    { key: "progress", button: refs.progressPageBtn, section: refs.progressPage },
+    { key: "plans", button: refs.plansPageBtn, section: refs.plansPage }
+  ];
+
+  pages.forEach(({ key, button, section }) => {
+    const isActive = state.currentPage === key;
+    button.classList.toggle("is-active", isActive);
+    section.classList.toggle("is-active", isActive);
+  });
 }
 
 function renderCurrentView() {
@@ -663,6 +692,7 @@ function goToToday() {
 }
 
 function selectDate(dateKey) {
+  state.currentPage = "records";
   state.selectedDate = dateKey;
   state.viewDate = startOfMonth(parseDateKey(dateKey));
   state.weekAnchor = startOfWeek(parseDateKey(dateKey));
@@ -678,6 +708,14 @@ function setCurrentView(view) {
   renderCurrentView();
 }
 
+function setCurrentPage(page) {
+  state.currentPage = page;
+  if (page !== "records") {
+    closeComposer();
+  }
+  renderCurrentPage();
+}
+
 function handleExerciseInputChange() {
   const match = findExercise(refs.exerciseInput.value.trim());
   if (match) {
@@ -688,21 +726,24 @@ function handleExerciseInputChange() {
 
 function fillFormFromExercise(exerciseName, source = null) {
   const entry = source && source.muscleGroup ? source : findExercise(exerciseName);
+  state.currentPage = "records";
   refs.exerciseInput.value = exerciseName;
   refs.muscleGroupInput.value = entry?.muscleGroup || inferMuscleGroup(exerciseName) || "胸部";
   refs.categoryInput.value = entry?.category || refs.categoryInput.value;
   refs.notesInput.value = source?.title ? `周计划：${source.title}` : refs.notesInput.value;
-  refs.exerciseInput.focus();
+  renderCurrentPage();
   openComposer();
 }
 
 function applyPlanToSelectedDate(plan) {
+  state.currentPage = "records";
   state.selectedDate = state.selectedDate || formatDate(new Date());
   refs.dateInput.value = state.selectedDate;
   refs.exerciseInput.value = plan.exercises[0];
   refs.muscleGroupInput.value = plan.muscleGroup;
   refs.categoryInput.value = plan.category;
   refs.notesInput.value = `周计划：${plan.title} · ${plan.exercises.join(" / ")}`;
+  renderCurrentPage();
   openComposer();
 }
 
@@ -715,10 +756,18 @@ function jumpToNextWeekday(weekdayIndex) {
     }
     cursor = addDays(cursor, 1);
   }
-  selectDate(formatDate(cursor));
+  state.currentPage = "overview";
+  state.selectedDate = formatDate(cursor);
+  state.viewDate = startOfMonth(cursor);
+  state.weekAnchor = startOfWeek(cursor);
+  syncFormDate();
+  render();
 }
 
 function openComposer() {
+  state.currentPage = "records";
+  renderCurrentPage();
+
   if (!isMobileViewport()) {
     refs.exerciseInput.focus();
     return;

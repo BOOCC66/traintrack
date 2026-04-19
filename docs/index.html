@@ -52,6 +52,15 @@
       </div>
     </header>
 
+    <section class="panel page-nav-panel">
+      <div class="page-nav" id="pageNav">
+        <button class="page-nav-btn is-active" id="overviewPageBtn" type="button">概览</button>
+        <button class="page-nav-btn" id="recordsPageBtn" type="button">记录</button>
+        <button class="page-nav-btn" id="progressPageBtn" type="button">图表</button>
+        <button class="page-nav-btn" id="plansPageBtn" type="button">计划</button>
+      </div>
+    </section>
+
     <section class="panel control-panel">
       <div class="panel-head">
         <div>
@@ -80,193 +89,205 @@
       </div>
     </section>
 
-    <main class="layout">
-      <section class="panel view-panel">
-        <section class="calendar-panel" id="calendarView">
+    <section class="page-section is-active" id="overviewPage">
+      <main class="layout single-focus-layout">
+        <section class="panel view-panel">
+          <section class="calendar-panel" id="calendarView">
+            <div class="panel-head">
+              <div>
+                <p class="section-kicker">日历视图</p>
+                <h2>训练日历</h2>
+              </div>
+              <div class="calendar-actions">
+                <button class="ghost-btn" id="prevMonthBtn" type="button">上个月</button>
+                <button class="ghost-btn" id="todayBtn" type="button">今天</button>
+                <button class="ghost-btn" id="nextMonthBtn" type="button">下个月</button>
+              </div>
+            </div>
+
+            <div class="month-bar">
+              <h3 id="calendarMonthLabel"></h3>
+              <p id="calendarSummary"></p>
+            </div>
+
+            <div class="weekday-row">
+              <span>一</span>
+              <span>二</span>
+              <span>三</span>
+              <span>四</span>
+              <span>五</span>
+              <span>六</span>
+              <span>日</span>
+            </div>
+
+            <div class="calendar-grid" id="calendarGrid"></div>
+          </section>
+
+          <section class="week-panel hidden" id="weekView">
+            <div class="panel-head">
+              <div>
+                <p class="section-kicker">周视图</p>
+                <h2>训练周计划</h2>
+              </div>
+              <div class="calendar-actions">
+                <button class="ghost-btn" id="prevWeekBtn" type="button">上一周</button>
+                <button class="ghost-btn" id="thisWeekBtn" type="button">本周</button>
+                <button class="ghost-btn" id="nextWeekBtn" type="button">下一周</button>
+              </div>
+            </div>
+
+            <div class="month-bar">
+              <h3 id="weekRangeLabel"></h3>
+              <p id="weekSummary"></p>
+            </div>
+
+            <div class="week-grid" id="weekGrid"></div>
+          </section>
+        </section>
+      </main>
+    </section>
+
+    <section class="page-section" id="recordsPage">
+      <main class="layout">
+        <section class="panel entry-panel">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">日历视图</p>
-              <h2>训练日历</h2>
+              <p class="section-kicker">快速新增</p>
+              <h2>新增训练记录</h2>
             </div>
-            <div class="calendar-actions">
-              <button class="ghost-btn" id="prevMonthBtn" type="button">上个月</button>
-              <button class="ghost-btn" id="todayBtn" type="button">今天</button>
-              <button class="ghost-btn" id="nextMonthBtn" type="button">下个月</button>
+            <div class="entry-actions">
+              <button class="ghost-btn mobile-only" id="closeComposerBtn" type="button">关闭</button>
+              <button class="accent-btn" id="resetFormBtn" type="button">清空表单</button>
             </div>
           </div>
 
-          <div class="month-bar">
-            <h3 id="calendarMonthLabel"></h3>
-            <p id="calendarSummary"></p>
-          </div>
+          <form id="entryForm" class="entry-form">
+            <div class="input-grid">
+              <label>
+                <span>训练日期</span>
+                <input id="dateInput" name="date" type="date" required>
+              </label>
 
-          <div class="weekday-row">
-            <span>一</span>
-            <span>二</span>
-            <span>三</span>
-            <span>四</span>
-            <span>五</span>
-            <span>六</span>
-            <span>日</span>
-          </div>
+              <label>
+                <span>训练动作</span>
+                <input id="exerciseInput" name="exercise" list="exerciseOptions" placeholder="例如：深蹲" required>
+                <datalist id="exerciseOptions"></datalist>
+              </label>
 
-          <div class="calendar-grid" id="calendarGrid"></div>
+              <label>
+                <span>肌群</span>
+                <select id="muscleGroupInput" name="muscleGroup"></select>
+              </label>
+
+              <label>
+                <span>训练类型</span>
+                <select id="categoryInput" name="category">
+                  <option value="力量训练">力量训练</option>
+                  <option value="增肌训练">增肌训练</option>
+                  <option value="耐力训练">耐力训练</option>
+                  <option value="核心训练">核心训练</option>
+                  <option value="有氧训练">有氧训练</option>
+                  <option value="恢复训练">恢复训练</option>
+                </select>
+              </label>
+
+              <label>
+                <span>组数</span>
+                <input id="setsInput" name="sets" type="number" min="1" max="20" placeholder="4" required>
+              </label>
+
+              <label>
+                <span>次数</span>
+                <input id="repsInput" name="reps" type="number" min="1" max="200" placeholder="10" required>
+              </label>
+
+              <label>
+                <span>重量 (kg)</span>
+                <input id="weightInput" name="weight" type="number" min="0" max="500" step="0.5" placeholder="60">
+              </label>
+            </div>
+
+            <label class="full-width">
+              <span>备注</span>
+              <textarea id="notesInput" name="notes" rows="3" placeholder="例如：最后一组接近力竭，状态不错"></textarea>
+            </label>
+
+            <div class="plan-suggestion-block">
+              <div class="popular-header">
+                <span id="selectedPlanLabel">当天计划联动</span>
+                <small>从周计划带入动作</small>
+              </div>
+              <div class="chip-wrap" id="planExerciseChips"></div>
+            </div>
+
+            <div class="popular-block">
+              <div class="popular-header">
+                <span>热门高频动作</span>
+                <small>点击可快速填入</small>
+              </div>
+              <div class="chip-wrap" id="exerciseChips"></div>
+            </div>
+
+            <div class="form-actions">
+              <button class="accent-btn" type="submit">保存训练记录</button>
+            </div>
+          </form>
         </section>
 
-        <section class="week-panel hidden" id="weekView">
+        <section class="panel detail-panel">
           <div class="panel-head">
             <div>
-              <p class="section-kicker">周视图</p>
-              <h2>训练周计划</h2>
+              <p class="section-kicker">当天记录</p>
+              <h2 id="detailTitle">训练详情</h2>
             </div>
-            <div class="calendar-actions">
-              <button class="ghost-btn" id="prevWeekBtn" type="button">上一周</button>
-              <button class="ghost-btn" id="thisWeekBtn" type="button">本周</button>
-              <button class="ghost-btn" id="nextWeekBtn" type="button">下一周</button>
-            </div>
+            <button class="ghost-btn" id="clearDayBtn" type="button">清空当天</button>
           </div>
-
-          <div class="month-bar">
-            <h3 id="weekRangeLabel"></h3>
-            <p id="weekSummary"></p>
-          </div>
-
-          <div class="week-grid" id="weekGrid"></div>
+          <div id="dayRecords" class="record-list"></div>
         </section>
-      </section>
+      </main>
+    </section>
 
-      <section class="panel entry-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">快速新增</p>
-            <h2>新增训练记录</h2>
-          </div>
-          <div class="entry-actions">
-            <button class="ghost-btn mobile-only" id="closeComposerBtn" type="button">关闭</button>
-            <button class="accent-btn" id="resetFormBtn" type="button">清空表单</button>
-          </div>
-        </div>
-
-        <form id="entryForm" class="entry-form">
-          <div class="input-grid">
-            <label>
-              <span>训练日期</span>
-              <input id="dateInput" name="date" type="date" required>
-            </label>
-
-            <label>
-              <span>训练动作</span>
-              <input id="exerciseInput" name="exercise" list="exerciseOptions" placeholder="例如：深蹲" required>
-              <datalist id="exerciseOptions"></datalist>
-            </label>
-
-            <label>
-              <span>肌群</span>
-              <select id="muscleGroupInput" name="muscleGroup"></select>
-            </label>
-
-            <label>
-              <span>训练类型</span>
-              <select id="categoryInput" name="category">
-                <option value="力量训练">力量训练</option>
-                <option value="增肌训练">增肌训练</option>
-                <option value="耐力训练">耐力训练</option>
-                <option value="核心训练">核心训练</option>
-                <option value="有氧训练">有氧训练</option>
-                <option value="恢复训练">恢复训练</option>
-              </select>
-            </label>
-
-            <label>
-              <span>组数</span>
-              <input id="setsInput" name="sets" type="number" min="1" max="20" placeholder="4" required>
-            </label>
-
-            <label>
-              <span>次数</span>
-              <input id="repsInput" name="reps" type="number" min="1" max="200" placeholder="10" required>
-            </label>
-
-            <label>
-              <span>重量 (kg)</span>
-              <input id="weightInput" name="weight" type="number" min="0" max="500" step="0.5" placeholder="60">
-            </label>
-          </div>
-
-          <label class="full-width">
-            <span>备注</span>
-            <textarea id="notesInput" name="notes" rows="3" placeholder="例如：最后一组接近力竭，状态不错"></textarea>
-          </label>
-
-          <div class="plan-suggestion-block">
-            <div class="popular-header">
-              <span id="selectedPlanLabel">当天计划联动</span>
-              <small>从周计划带入动作</small>
+    <section class="page-section" id="progressPage">
+      <main class="layout">
+        <section class="panel progress-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">PR 曲线</p>
+              <h2 id="progressTitle">重量进步图表</h2>
             </div>
-            <div class="chip-wrap" id="planExerciseChips"></div>
           </div>
+          <div class="progress-stats" id="progressStats"></div>
+          <div class="chart-shell">
+            <svg id="progressChart" viewBox="0 0 640 260" role="img" aria-label="训练进步图表"></svg>
+          </div>
+        </section>
 
-          <div class="popular-block">
-            <div class="popular-header">
-              <span>热门高频动作</span>
-              <small>点击可快速填入</small>
+        <section class="panel summary-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">动作热度</p>
+              <h2>常练动作与肌群</h2>
             </div>
-            <div class="chip-wrap" id="exerciseChips"></div>
+            <button class="ghost-btn" id="seedDataBtn" type="button">填充示例数据</button>
           </div>
+          <div id="muscleSummary" class="muscle-summary"></div>
+          <div id="topExercises" class="top-exercise-list"></div>
+        </section>
+      </main>
+    </section>
 
-          <div class="form-actions">
-            <button class="accent-btn" type="submit">保存训练记录</button>
+    <section class="page-section" id="plansPage">
+      <main class="layout single-focus-layout">
+        <section class="panel plan-panel">
+          <div class="panel-head">
+            <div>
+              <p class="section-kicker">训练计划</p>
+              <h2>周计划联动</h2>
+            </div>
           </div>
-        </form>
-      </section>
-    </main>
-
-    <section class="bottom-grid">
-      <section class="panel detail-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">当天记录</p>
-            <h2 id="detailTitle">训练详情</h2>
-          </div>
-          <button class="ghost-btn" id="clearDayBtn" type="button">清空当天</button>
-        </div>
-        <div id="dayRecords" class="record-list"></div>
-      </section>
-
-      <section class="panel progress-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">PR 曲线</p>
-            <h2 id="progressTitle">重量进步图表</h2>
-          </div>
-        </div>
-        <div class="progress-stats" id="progressStats"></div>
-        <div class="chart-shell">
-          <svg id="progressChart" viewBox="0 0 640 260" role="img" aria-label="训练进步图表"></svg>
-        </div>
-      </section>
-
-      <section class="panel summary-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">动作热度</p>
-            <h2>常练动作与肌群</h2>
-          </div>
-          <button class="ghost-btn" id="seedDataBtn" type="button">填充示例数据</button>
-        </div>
-        <div id="muscleSummary" class="muscle-summary"></div>
-        <div id="topExercises" class="top-exercise-list"></div>
-      </section>
-
-      <section class="panel plan-panel">
-        <div class="panel-head">
-          <div>
-            <p class="section-kicker">训练计划</p>
-            <h2>周计划联动</h2>
-          </div>
-        </div>
-        <div id="weekPlanList" class="plan-list"></div>
-      </section>
+          <div id="weekPlanList" class="plan-list"></div>
+        </section>
+      </main>
     </section>
   </div>
 

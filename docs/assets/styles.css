@@ -23,6 +23,7 @@ body {
   min-height: 100vh;
   font-family: "Segoe UI Variable Text", "Microsoft YaHei UI", sans-serif;
   color: var(--text);
+  overflow: hidden;
   overscroll-behavior-y: none;
   background:
     radial-gradient(circle at top left, rgba(234, 93, 45, 0.18), transparent 32%),
@@ -41,6 +42,11 @@ textarea {
   width: min(1360px, calc(100% - 32px));
   margin: 0 auto;
   padding: 28px 0 40px;
+  height: 100vh;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 0;
 }
 
 .hero,
@@ -147,6 +153,49 @@ textarea {
   margin-top: 22px;
 }
 
+.page-nav-panel {
+  margin-top: 22px;
+  padding: 14px;
+}
+
+.page-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.page-nav-btn {
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 18px;
+  cursor: pointer;
+  color: var(--muted);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(28, 26, 23, 0.08);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.page-nav-btn:hover {
+  transform: translateY(-1px);
+}
+
+.page-nav-btn.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #ff875f);
+  box-shadow: 0 14px 28px rgba(234, 93, 45, 0.22);
+}
+
+.page-section {
+  display: none;
+  min-height: 0;
+}
+
+.page-section.is-active {
+  display: flex;
+  flex-direction: column;
+}
+
 .layout,
 .bottom-grid {
   display: grid;
@@ -155,6 +204,16 @@ textarea {
 
 .layout {
   grid-template-columns: 1.15fr 0.85fr;
+  min-height: 0;
+}
+
+.page-section > .layout {
+  flex: 1;
+  min-height: 0;
+}
+
+.single-focus-layout {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .bottom-grid {
@@ -164,6 +223,12 @@ textarea {
 .panel {
   padding: 24px;
   border-radius: 26px;
+}
+
+.layout > .panel,
+.single-focus-layout > .panel {
+  min-height: 0;
+  overflow: auto;
 }
 
 .panel-head,
@@ -665,8 +730,14 @@ textarea {
     overflow: hidden;
   }
 
+  body {
+    overflow-y: auto;
+  }
+
   .app-shell {
     width: min(100% - 18px, 100%);
+    min-height: auto;
+    display: block;
     padding-top: 18px;
     padding-bottom: calc(98px + env(safe-area-inset-bottom));
   }
@@ -702,6 +773,23 @@ textarea {
   .input-grid,
   .week-grid {
     grid-template-columns: 1fr;
+  }
+
+  .page-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .page-nav-btn {
+    padding: 12px 14px;
+  }
+
+  .page-section > .layout {
+    margin-top: 18px;
+  }
+
+  .layout > .panel,
+  .single-focus-layout > .panel {
+    overflow: visible;
   }
 
   .weekday-row,
