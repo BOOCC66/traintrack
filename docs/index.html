@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrainTrack - 健身记录</title>
+  <meta name="theme-color" content="#ea5d2d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TrainTrack">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Workout Journal</p>
+        <h1>TrainTrack 健身记录台</h1>
+        <p class="hero-copy">
+          用月历回看训练节奏，用快速录入把每一次组数和次数都记清楚。
+        </p>
+        <div class="hero-tools">
+          <button class="ghost-btn" id="exportBtn" type="button">导出记录</button>
+          <button class="ghost-btn" id="importBtn" type="button">导入记录</button>
+          <button class="ghost-btn" id="installAppBtn" type="button" hidden>安装到手机</button>
+          <input id="importFileInput" type="file" accept="application/json" hidden>
+        </div>
+        <p class="hero-tip" id="installHint">
+          手机浏览器打开后可直接记训练；如果通过网页托管，还可以添加到主屏幕。
+        </p>
+      </div>
+      <div class="hero-stats" id="heroStats">
+        <article>
+          <span>本月训练天数</span>
+          <strong id="monthDaysCount">0</strong>
+        </article>
+        <article>
+          <span>本月总动作数</span>
+          <strong id="monthExerciseCount">0</strong>
+        </article>
+        <article>
+          <span>当前选中日期</span>
+          <strong id="selectedDateLabel">--</strong>
+        </article>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel calendar-panel">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">日历视图</p>
+            <h2>训练日历</h2>
+          </div>
+          <div class="calendar-actions">
+            <button class="ghost-btn" id="prevMonthBtn" type="button">上个月</button>
+            <button class="ghost-btn" id="todayBtn" type="button">今天</button>
+            <button class="ghost-btn" id="nextMonthBtn" type="button">下个月</button>
+          </div>
+        </div>
+
+        <div class="month-bar">
+          <h3 id="calendarMonthLabel"></h3>
+          <p id="calendarSummary"></p>
+        </div>
+
+        <div class="weekday-row">
+          <span>一</span>
+          <span>二</span>
+          <span>三</span>
+          <span>四</span>
+          <span>五</span>
+          <span>六</span>
+          <span>日</span>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+      <section class="panel entry-panel">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">快速新增</p>
+            <h2>新增训练记录</h2>
+          </div>
+          <div class="entry-actions">
+            <button class="ghost-btn mobile-only" id="closeComposerBtn" type="button">关闭</button>
+            <button class="accent-btn" id="resetFormBtn" type="button">清空表单</button>
+          </div>
+        </div>
+
+        <form id="entryForm" class="entry-form">
+          <div class="input-grid">
+            <label>
+              <span>训练日期</span>
+              <input id="dateInput" name="date" type="date" required>
+            </label>
+
+            <label>
+              <span>训练动作</span>
+              <input id="exerciseInput" name="exercise" list="exerciseOptions" placeholder="例如：深蹲" required>
+              <datalist id="exerciseOptions"></datalist>
+            </label>
+
+            <label>
+              <span>组数</span>
+              <input id="setsInput" name="sets" type="number" min="1" max="20" placeholder="4" required>
+            </label>
+
+            <label>
+              <span>次数</span>
+              <input id="repsInput" name="reps" type="number" min="1" max="200" placeholder="10" required>
+            </label>
+
+            <label>
+              <span>重量 (kg)</span>
+              <input id="weightInput" name="weight" type="number" min="0" max="500" step="0.5" placeholder="60">
+            </label>
+
+            <label>
+              <span>训练类型</span>
+              <select id="categoryInput" name="category">
+                <option value="力量训练">力量训练</option>
+                <option value="增肌训练">增肌训练</option>
+                <option value="耐力训练">耐力训练</option>
+                <option value="核心训练">核心训练</option>
+                <option value="有氧训练">有氧训练</option>
+                <option value="恢复训练">恢复训练</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="full-width">
+            <span>备注</span>
+            <textarea id="notesInput" name="notes" rows="3" placeholder="例如：最后一组接近力竭，状态不错"></textarea>
+          </label>
+
+          <div class="popular-block">
+            <div class="popular-header">
+              <span>热门高频动作</span>
+              <small>点击可快速填入</small>
+            </div>
+            <div class="chip-wrap" id="exerciseChips"></div>
+          </div>
+
+          <div class="form-actions">
+            <button class="accent-btn" type="submit">保存训练记录</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <section class="bottom-grid">
+      <section class="panel detail-panel">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">当天记录</p>
+            <h2 id="detailTitle">训练详情</h2>
+          </div>
+          <button class="ghost-btn" id="clearDayBtn" type="button">清空当天</button>
+        </div>
+        <div id="dayRecords" class="record-list"></div>
+      </section>
+
+      <section class="panel summary-panel">
+        <div class="panel-head">
+          <div>
+            <p class="section-kicker">动作热度</p>
+            <h2>常练动作统计</h2>
+          </div>
+          <button class="ghost-btn" id="seedDataBtn" type="button">填充示例数据</button>
+        </div>
+        <div id="topExercises" class="top-exercise-list"></div>
+      </section>
+    </section>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+  <button class="mobile-fab" id="openComposerBtn" type="button">+ 记录训练</button>
+
+  <template id="recordItemTemplate">
+    <article class="record-card">
+      <div class="record-main">
+        <div>
+          <h3 class="record-name"></h3>
+          <p class="record-meta"></p>
+        </div>
+        <button class="icon-btn delete-btn" type="button">删除</button>
+      </div>
+      <p class="record-notes"></p>
+    </article>
+  </template>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
