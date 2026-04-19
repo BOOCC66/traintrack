@@ -97,7 +97,8 @@ textarea {
 .entry-actions,
 .control-grid,
 .progress-stats,
-.muscle-summary {
+.muscle-summary,
+.control-block-head {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -184,6 +185,19 @@ textarea {
 
 .control-grid {
   align-items: end;
+}
+
+.control-block {
+  display: grid;
+  gap: 8px;
+}
+
+.control-block-wide {
+  grid-column: 1 / -1;
+}
+
+.control-block-head span {
+  font-weight: 600;
 }
 
 .segmented {
@@ -466,6 +480,19 @@ textarea {
   background: var(--accent-soft);
   color: var(--accent-deep);
   cursor: pointer;
+}
+
+.selectable-chip-wrap .chip {
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--text);
+  border-color: rgba(28, 26, 23, 0.08);
+}
+
+.selectable-chip-wrap .chip.is-selected {
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), #3b82f6);
+  border-color: transparent;
+  box-shadow: 0 12px 20px rgba(29, 78, 216, 0.18);
 }
 
 .muscle-pill {
