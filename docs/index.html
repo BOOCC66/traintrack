@@ -8,10 +8,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="TrainTrack">
-  <link rel="manifest" href="manifest.webmanifest?v=20260419-2">
+  <link rel="manifest" href="manifest.webmanifest?v=20260419-3">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="assets/icon.svg">
-  <link rel="stylesheet" href="assets/styles.css?v=20260419-2">
+  <link rel="stylesheet" href="assets/styles.css?v=20260419-3">
 </head>
 <body>
   <div class="app-shell">
@@ -54,10 +54,10 @@
 
     <section class="panel page-nav-panel">
       <div class="page-nav" id="pageNav">
-        <button class="page-nav-btn is-active" id="overviewPageBtn" type="button">概览</button>
-        <button class="page-nav-btn" id="recordsPageBtn" type="button">记录</button>
-        <button class="page-nav-btn" id="progressPageBtn" type="button">图表</button>
-        <button class="page-nav-btn" id="plansPageBtn" type="button">计划</button>
+        <button class="page-nav-btn is-active" id="overviewPageBtn" data-page="overview" type="button">概览</button>
+        <button class="page-nav-btn" id="recordsPageBtn" data-page="records" type="button">记录</button>
+        <button class="page-nav-btn" id="progressPageBtn" data-page="progress" type="button">图表</button>
+        <button class="page-nav-btn" id="plansPageBtn" data-page="plans" type="button">计划</button>
       </div>
     </section>
 
@@ -310,6 +310,6 @@
     </article>
   </template>
 
-  <script src="assets/app.js?v=20260419-2"></script>
+  <script src="assets/app.js?v=20260419-3"></script>
 </body>
 </html>
