@@ -1,11 +1,11 @@
-const CACHE_NAME = "traintrack-static-v5";
+const CACHE_NAME = "traintrack-static-v6";
 const APP_SHELL = "./index.html";
 const ASSETS = [
   "./",
   "./index.html",
-  "./assets/styles.css?v=20260419-3",
-  "./assets/app.js?v=20260419-3",
-  "./manifest.webmanifest?v=20260419-3",
+  "./assets/styles.css?v=20260419-4",
+  "./assets/app.js?v=20260419-4",
+  "./manifest.webmanifest?v=20260419-4",
   "./assets/icon.svg"
 ];
 
