@@ -65,7 +65,7 @@ const state = {
   weekAnchor: startOfWeek(new Date()),
   selectedDate: formatDate(new Date()),
   filterMuscleGroup: "全部肌群",
-  selectedProgressExercise: "全部动作",
+  selectedProgressExercises: [],
   records: loadRecords(),
   weekPlans: loadWeekPlans()
 };
@@ -112,7 +112,8 @@ const refs = {
   calendarViewBtn: document.getElementById("calendarViewBtn"),
   weekViewBtn: document.getElementById("weekViewBtn"),
   muscleGroupFilter: document.getElementById("muscleGroupFilter"),
-  progressExerciseFilter: document.getElementById("progressExerciseFilter"),
+  progressExerciseChoices: document.getElementById("progressExerciseChoices"),
+  clearProgressSelectionBtn: document.getElementById("clearProgressSelectionBtn"),
   exportBtn: document.getElementById("exportBtn"),
   importBtn: document.getElementById("importBtn"),
   installAppBtn: document.getElementById("installAppBtn"),
@@ -173,11 +174,13 @@ function bindEvents() {
   refs.weekViewBtn.addEventListener("click", () => setCurrentView("week"));
   refs.muscleGroupFilter.addEventListener("change", (event) => {
     state.filterMuscleGroup = event.target.value;
-    ensureProgressExerciseSelection();
+    ensureProgressExerciseSelection(true);
     render();
   });
-  refs.progressExerciseFilter.addEventListener("change", (event) => {
-    state.selectedProgressExercise = event.target.value;
+  refs.clearProgressSelectionBtn.addEventListener("click", () => {
+    state.selectedProgressExercises = [];
+    ensureProgressExerciseSelection(true);
+    syncFilterControls();
     renderProgressPanel();
   });
   refs.exerciseInput.addEventListener("change", handleExerciseInputChange);
@@ -403,36 +406,47 @@ function renderTopExercises() {
 
 function renderProgressPanel() {
   ensureProgressExerciseSelection();
-  const exerciseName = resolveSelectedProgressExercise();
-  refs.progressTitle.textContent = exerciseName ? `${exerciseName} 的 PR 曲线` : "重量进步图表";
+  const exerciseNames = resolveSelectedProgressExercises();
+  refs.progressTitle.textContent = exerciseNames.length > 0
+    ? `${exerciseNames.join(" / ")} 的 PR 曲线`
+    : "重量进步图表";
   refs.progressStats.innerHTML = "";
   refs.progressChart.innerHTML = "";
 
-  if (!exerciseName) {
+  if (exerciseNames.length === 0) {
     refs.progressStats.appendChild(createProgressStat("记录状态", "暂无数据"));
-    refs.progressStats.appendChild(createProgressStat("建议", "先新增一条含重量的记录"));
-    renderEmptyChart("还没有足够的重量记录，先记录一次训练后这里会出现 PR 曲线。");
+    refs.progressStats.appendChild(createProgressStat("建议", "先选择一个动作"));
+    renderEmptyChart("请选择至少一个动作来展示 PR 曲线。");
     return;
   }
 
-  const series = buildProgressSeries(exerciseName);
-  if (series.length === 0) {
-    refs.progressStats.appendChild(createProgressStat("图表动作", exerciseName));
+  const datasets = exerciseNames
+    .map((exerciseName) => ({
+      exerciseName,
+      points: buildProgressSeries(exerciseName)
+    }))
+    .filter((dataset) => dataset.points.length > 0);
+
+  if (datasets.length === 0) {
+    refs.progressStats.appendChild(createProgressStat("图表动作", exerciseNames.join(" / ")));
     refs.progressStats.appendChild(createProgressStat("重量记录", "0 条"));
-    renderEmptyChart("当前动作还没有重量数据，记录重量后就能看到进步趋势。");
+    renderEmptyChart("当前所选动作都还没有重量数据，记录重量后就能看到进步趋势。");
     return;
   }
 
-  const bestWeight = Math.max(...series.map((item) => item.weight));
-  const bestPr = Math.max(...series.map((item) => item.estimatedPr));
-  const latest = series[series.length - 1];
+  const bestWeight = Math.max(...datasets.flatMap((dataset) => dataset.points.map((item) => item.weight)));
+  const bestPr = Math.max(...datasets.flatMap((dataset) => dataset.points.map((item) => item.estimatedPr)));
+  const latest = datasets
+    .flatMap((dataset) => dataset.points.map((point) => ({ ...point, exerciseName: dataset.exerciseName })))
+    .sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date))
+    .at(-1);
 
+  refs.progressStats.appendChild(createProgressStat("展示动作", `${datasets.length} 个`));
   refs.progressStats.appendChild(createProgressStat("最佳重量", `${formatNumber(bestWeight)} kg`));
   refs.progressStats.appendChild(createProgressStat("最佳估算 1RM", `${formatNumber(bestPr)} kg`));
-  refs.progressStats.appendChild(createProgressStat("最近一次", `${formatNumber(latest.weight)} kg`));
-  refs.progressStats.appendChild(createProgressStat("记录天数", `${series.length} 天`));
+  refs.progressStats.appendChild(createProgressStat("最近一次", `${latest.exerciseName} · ${formatNumber(latest.weight)} kg`));
 
-  renderChart(series);
+  renderChart(datasets);
 }
 
 function renderWeekPlans() {
@@ -528,17 +542,20 @@ function populateMuscleGroupOptions() {
 
 function syncFilterControls() {
   refs.muscleGroupFilter.value = state.filterMuscleGroup;
-  refs.progressExerciseFilter.innerHTML = "";
-  refs.progressExerciseFilter.appendChild(createOptionElement("全部动作", "全部动作"));
+  ensureProgressExerciseSelection();
+  refs.progressExerciseChoices.innerHTML = "";
 
   getAvailableExercisesForFilter().forEach((exercise) => {
-    refs.progressExerciseFilter.appendChild(createOptionElement(exercise, exercise));
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    if (state.selectedProgressExercises.includes(exercise)) {
+      chip.classList.add("is-selected");
+    }
+    chip.textContent = exercise;
+    chip.addEventListener("click", () => toggleProgressExercise(exercise));
+    refs.progressExerciseChoices.appendChild(chip);
   });
-
-  if (![...refs.progressExerciseFilter.options].some((option) => option.value === state.selectedProgressExercise)) {
-    state.selectedProgressExercise = "全部动作";
-  }
-  refs.progressExerciseFilter.value = state.selectedProgressExercise;
 }
 
 function handleSubmit(event) {
@@ -567,8 +584,8 @@ function handleSubmit(event) {
   state.viewDate = startOfMonth(parseDateKey(newRecord.date));
   state.weekAnchor = startOfWeek(parseDateKey(newRecord.date));
   persistRecords();
-  if (state.selectedProgressExercise === "全部动作") {
-    state.selectedProgressExercise = newRecord.exercise;
+  if (!state.selectedProgressExercises.includes(newRecord.exercise)) {
+    state.selectedProgressExercises = [newRecord.exercise];
   }
   resetForm();
   syncFormDate();
@@ -620,6 +637,7 @@ function fillSampleData() {
 
   state.records = mergeRecords(seed);
   persistRecords();
+  ensureProgressExerciseSelection(true);
   render();
 }
 
@@ -888,27 +906,21 @@ function getAvailableExercisesForFilter() {
   return [...exerciseSet].sort((a, b) => a.localeCompare(b, "zh-CN"));
 }
 
-function ensureProgressExerciseSelection() {
+function ensureProgressExerciseSelection(forceFallback = false) {
   const available = getAvailableExercisesForFilter();
-  if (state.selectedProgressExercise !== "全部动作" && available.includes(state.selectedProgressExercise)) {
+  state.selectedProgressExercises = state.selectedProgressExercises.filter((exercise) => available.includes(exercise));
+
+  if (state.selectedProgressExercises.length > 0 && !forceFallback) {
     return;
   }
-  state.selectedProgressExercise = "全部动作";
+
+  if (state.selectedProgressExercises.length === 0 && available.length > 0) {
+    state.selectedProgressExercises = [available[0]];
+  }
 }
 
-function resolveSelectedProgressExercise() {
-  if (state.selectedProgressExercise !== "全部动作") {
-    return state.selectedProgressExercise;
-  }
-
-  const ranked = Object.entries(
-    getFilteredRecords().reduce((accumulator, record) => {
-      accumulator[record.exercise] = (accumulator[record.exercise] || 0) + 1;
-      return accumulator;
-    }, {})
-  ).sort((a, b) => b[1] - a[1]);
-
-  return ranked[0]?.[0] || null;
+function resolveSelectedProgressExercises() {
+  return [...state.selectedProgressExercises];
 }
 
 function buildProgressSeries(exerciseName) {
@@ -933,28 +945,24 @@ function buildProgressSeries(exerciseName) {
   return [...grouped.values()].sort((a, b) => parseDateKey(a.date) - parseDateKey(b.date));
 }
 
-function renderChart(series) {
+function renderChart(datasets) {
   const width = 640;
   const height = 260;
   const padding = { top: 24, right: 20, bottom: 42, left: 48 };
-  const values = series.flatMap((point) => [point.weight, point.estimatedPr]);
+  const palette = [
+    { weight: "#ea5d2d", pr: "#1d4ed8" },
+    { weight: "#0f766e", pr: "#8b5cf6" },
+    { weight: "#d97706", pr: "#ec4899" },
+    { weight: "#059669", pr: "#7c3aed" }
+  ];
+  const values = datasets.flatMap((dataset) => dataset.points.flatMap((point) => [point.weight, point.estimatedPr]));
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
   const range = Math.max(maxValue - minValue, 10);
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
-
-  const weightPoints = [];
-  const prPoints = [];
-  const labelStep = Math.max(1, Math.ceil(series.length / 5));
-
-  series.forEach((point, index) => {
-    const x = padding.left + (series.length === 1 ? chartWidth / 2 : (index / (series.length - 1)) * chartWidth);
-    const weightY = padding.top + chartHeight - ((point.weight - minValue) / range) * chartHeight;
-    const prY = padding.top + chartHeight - ((point.estimatedPr - minValue) / range) * chartHeight;
-    weightPoints.push(`${x},${weightY}`);
-    prPoints.push(`${x},${prY}`);
-  });
+  const longestSeries = datasets.reduce((best, dataset) => dataset.points.length > best.length ? dataset.points : best, []);
+  const labelStep = Math.max(1, Math.ceil(longestSeries.length / 5));
 
   const gridLines = Array.from({ length: 4 }, (_, index) => {
     const value = minValue + (range / 3) * index;
@@ -965,40 +973,77 @@ function renderChart(series) {
     `;
   }).join("");
 
-  const labels = series
+  const labels = longestSeries
     .map((point, index) => {
-      if (index % labelStep !== 0 && index !== series.length - 1) {
+      if (index % labelStep !== 0 && index !== longestSeries.length - 1) {
         return "";
       }
-      const x = padding.left + (series.length === 1 ? chartWidth / 2 : (index / (series.length - 1)) * chartWidth);
+      const x = padding.left + (longestSeries.length === 1 ? chartWidth / 2 : (index / (longestSeries.length - 1)) * chartWidth);
       return `<text x="${x}" y="${height - 12}" text-anchor="middle" fill="#70675b" font-size="12">${point.date.slice(5)}</text>`;
     })
     .join("");
 
+  const lines = datasets.map((dataset, datasetIndex) => {
+    const colors = palette[datasetIndex % palette.length];
+    const weightPoints = [];
+    const prPoints = [];
+
+    dataset.points.forEach((point, index) => {
+      const x = padding.left + (dataset.points.length === 1 ? chartWidth / 2 : (index / (dataset.points.length - 1)) * chartWidth);
+      const weightY = padding.top + chartHeight - ((point.weight - minValue) / range) * chartHeight;
+      const prY = padding.top + chartHeight - ((point.estimatedPr - minValue) / range) * chartHeight;
+      weightPoints.push(`${x},${weightY}`);
+      prPoints.push(`${x},${prY}`);
+    });
+
+    return `
+      <polyline fill="none" stroke="${colors.weight}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${weightPoints.join(" ")}"></polyline>
+      <polyline fill="none" stroke="${colors.pr}" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" points="${prPoints.join(" ")}"></polyline>
+      ${dataset.points.map((point, index) => {
+        const x = padding.left + (dataset.points.length === 1 ? chartWidth / 2 : (index / (dataset.points.length - 1)) * chartWidth);
+        const weightY = padding.top + chartHeight - ((point.weight - minValue) / range) * chartHeight;
+        const prY = padding.top + chartHeight - ((point.estimatedPr - minValue) / range) * chartHeight;
+        return `
+          <circle cx="${x}" cy="${weightY}" r="4" fill="${colors.weight}"></circle>
+          <circle cx="${x}" cy="${prY}" r="4" fill="${colors.pr}"></circle>
+        `;
+      }).join("")}
+    `;
+  }).join("");
+
+  const legend = datasets.map((dataset, datasetIndex) => {
+    const colors = palette[datasetIndex % palette.length];
+    const baseX = datasetIndex * 154;
+    return `
+      <rect x="${baseX}" y="-16" width="12" height="12" rx="6" fill="${colors.weight}"></rect>
+      <text x="${baseX + 18}" y="-6" fill="#70675b" font-size="12">${dataset.exerciseName} 重量</text>
+      <rect x="${baseX}" y="10" width="12" height="12" rx="6" fill="${colors.pr}"></rect>
+      <text x="${baseX + 18}" y="20" fill="#70675b" font-size="12">${dataset.exerciseName} 1RM</text>
+    `;
+  }).join("");
+
   refs.progressChart.innerHTML = `
     <rect x="0" y="0" width="${width}" height="${height}" rx="24" fill="rgba(255,255,255,0.68)"></rect>
     ${gridLines}
-    <polyline fill="none" stroke="#ea5d2d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${weightPoints.join(" ")}"></polyline>
-    <polyline fill="none" stroke="#1d4ed8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" points="${prPoints.join(" ")}"></polyline>
-    ${series.map((point, index) => {
-      const x = padding.left + (series.length === 1 ? chartWidth / 2 : (index / (series.length - 1)) * chartWidth);
-      const weightY = padding.top + chartHeight - ((point.weight - minValue) / range) * chartHeight;
-      const prY = padding.top + chartHeight - ((point.estimatedPr - minValue) / range) * chartHeight;
-      return `
-        <circle cx="${x}" cy="${weightY}" r="4" fill="#ea5d2d"></circle>
-        <circle cx="${x}" cy="${prY}" r="4" fill="#1d4ed8"></circle>
-      `;
-    }).join("")}
+    ${lines}
     ${labels}
     <g transform="translate(${padding.left}, ${height - 4})">
       <g class="chart-legend">
-        <rect x="0" y="-16" width="12" height="12" rx="6" fill="#ea5d2d"></rect>
-        <text x="18" y="-6" fill="#70675b" font-size="12">实际重量</text>
-        <rect x="96" y="-16" width="12" height="12" rx="6" fill="#1d4ed8"></rect>
-        <text x="114" y="-6" fill="#70675b" font-size="12">估算 1RM</text>
+        ${legend}
       </g>
     </g>
   `;
+}
+
+function toggleProgressExercise(exercise) {
+  if (state.selectedProgressExercises.includes(exercise)) {
+    state.selectedProgressExercises = state.selectedProgressExercises.filter((item) => item !== exercise);
+  } else {
+    state.selectedProgressExercises = [...state.selectedProgressExercises, exercise];
+  }
+  ensureProgressExerciseSelection();
+  syncFilterControls();
+  renderProgressPanel();
 }
 
 function renderEmptyChart(message) {
